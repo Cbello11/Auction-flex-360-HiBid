@@ -1,0 +1,36 @@
+{
+  "_readme": "Settings for the Auction Flex 360 export. The 'columns' block maps our field names (left) to the column headers written in the CSV (right). When you download the real template from AF360 (Lots > Import Lots > CSV Template), change the right-hand names to match it exactly.",
+
+  "columns": {
+    "lot":           "Lot #",
+    "title":         "Lead",
+    "description":   "Description",
+    "quantity":      "Quantity",
+    "seller_code":   "Seller Code",
+    "category":      "Category",
+    "low_estimate":  "Low Estimate",
+    "high_estimate": "High Estimate",
+    "starting_bid":  "Starting Bid",
+    "reserve":       "Reserve"
+  },
+
+  "defaults": {
+    "quantity": "1",
+    "seller_code": "",
+    "category": ""
+  },
+
+  "images": {
+    "max_width": 2048,
+    "max_height": 1536,
+    "jpeg_quality": 90,
+    "pad_to_16x9": false,
+    "pad_color": [255, 255, 255]
+  },
+
+  "rules": {
+    "max_title_length": 0,
+    "require_photos": true,
+    "plain_ascii_text": true
+  }
+}

@@ -1,0 +1,12 @@
+# This repo is PUBLIC. Real auctions (photos, consignor codes, prices) stay on your
+# computer only. Only the example auction is tracked.
+auctions/*
+!auctions/example/
+auctions/example/output/
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.DS_Store
+Thumbs.db

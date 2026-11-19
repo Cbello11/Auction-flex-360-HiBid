@@ -1,0 +1,5 @@
+Pillow>=10
+# Optional: lets the tool read iPhone .HEIC photos directly.
+# pillow-heif>=0.16
+# For running the tests:
+pytest>=8

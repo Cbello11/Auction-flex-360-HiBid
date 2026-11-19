@@ -1,0 +1,5 @@
+lot,title,description,quantity,seller_code,category,low_estimate,high_estimate,starting_bid,reserve,photo_folder,notes
+1,Vintage Oak Rocking Chair,"Solid oak rocking chair, spindle back.
+Condition: good, light wear on arms. Measures approx. 40"" H x 24"" W.",1,EXAMPLE,Furniture,40,80,10,,1,EXAMPLE DATA
+2,Blue Ceramic Table Lamp,"Blue glazed ceramic lamp with shade. Tested, works. 22"" tall.",1,EXAMPLE,Lighting,15,30,5,,2,EXAMPLE DATA
+3,Lot of Assorted Hand Tools,"Mixed hand tools: wrenches, screwdrivers, pliers. Used condition.",1,EXAMPLE,Tools,20,50,$5.00,,3,EXAMPLE DATA
