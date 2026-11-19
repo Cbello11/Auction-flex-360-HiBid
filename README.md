@@ -67,6 +67,22 @@ If there's **any** error, nothing is written, so a half-finished file never gets
 2. **Lot Images →** select every file in `images/` (Ctrl+A) **→ Upload**. Lots must be imported first.
 3. Spot-check a few lots, then **Upload Auction to HiBid**.
 
+## Bringing in eBay listings
+
+```bash
+python -m af360 from-ebay auctions/<name> --items ebay_items.json --seller-code GRS --start-bid-percent 25
+```
+- `ebay_items.json` is a list of eBay listings, either in the raw shape the eBay connector's
+  `ebay_get_listing` returns, or simplified (see `examples/ebay_sample.json`).
+- Every photo is downloaded at the largest size eBay offers (only from `i.ebayimg.com`).
+- The description is turned into plain text, and eBay-only sentences (shipping, returns, best
+  offer, "see my other items") are removed. The command prints exactly what it removed.
+- Condition and item specifics are added to the description.
+- `--start-bid-percent` sets the starting bid from the eBay price. Leave it out to leave bids blank.
+- Running it again skips listings already imported, so it's safe to re-run.
+- **It writes `ebay_to_end.csv`: every one of those eBay listings must be ended before the
+  auction goes live, or the item can sell twice.**
+
 ## What the build does for you
 - Renames photos to `<lot>-<n>.jpg`, the pattern AF360 uses to attach them to the right lot
 - Turns phone photos upright (phones store rotation separately; some sites ignore it)

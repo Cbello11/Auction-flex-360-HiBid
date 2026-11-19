@@ -4,6 +4,9 @@
     python -m af360 scan  auctions/<name>   add a lots.csv row for each photo folder
     python -m af360 check auctions/<name>   check everything, write nothing
     python -m af360 build auctions/<name>   check, then build the AF360 upload package
+    python -m af360 from-ebay auctions/<name> --items ebay_items.json [--seller-code X]
+                                            [--start-bid-percent 25]
+                                            add eBay listings as lots (downloads photos)
 """
 import argparse
 import sys
@@ -16,13 +19,29 @@ from .intake import new_auction, scan_photo_folders
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python -m af360", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=["new", "scan", "check", "build"])
+    parser.add_argument("command", choices=["new", "scan", "check", "build", "from-ebay"])
     parser.add_argument("auction_dir", help="folder for one auction, e.g. auctions/2026-11-22-estate")
     parser.add_argument("--config", help="path to config.json (default: the one in this repo)")
+    parser.add_argument("--items", help="from-ebay: JSON file of eBay listings")
+    parser.add_argument("--seller-code", default="", help="from-ebay: AF360 seller code for every lot")
+    parser.add_argument("--start-bid-percent", type=float,
+                        help="from-ebay: starting bid as a %% of the eBay price (blank if not given)")
     args = parser.parse_args(argv)
     cfg = load_config(args.config)
 
     try:
+        if args.command == "from-ebay":
+            from .ebay import import_items, load_items, report_text
+            if not args.items:
+                print("Error: from-ebay needs --items <file.json>")
+                return 1
+            items = load_items(args.items)
+            report = import_items(args.auction_dir, items, cfg, seller_code=args.seller_code,
+                                  start_bid_percent=args.start_bid_percent)
+            print(report_text(report))
+            print(f"\nNext: python -m af360 check {args.auction_dir}")
+            return 0
+
         if args.command == "new":
             path = new_auction(args.auction_dir)
             print(f"Created {path}/lots.csv and {path}/photos/")

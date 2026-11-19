@@ -30,6 +30,18 @@ The pipeline: photos in `auctions/<name>/photos/<lot>/` -> `lots.csv` -> `python
 7. **Run `python -m af360 build auctions/<name>`** and give the user the upload steps from
    `output/report.txt`.
 
+## From eBay listings
+
+1. Ask the user which listings go to auction. Never assume "all of them".
+2. Use the eBay connector's read-only tools (`ebay_get_active_listings`, `ebay_get_listing`).
+   Never call tools that change the eBay account (end, revise, relist, create) unless the user
+   asks for that exact action.
+3. Save the `ebay_get_listing` results as a JSON list. Keep only listing fields: drop the
+   `Seller` block (it contains the account email).
+4. `python -m af360 from-ebay auctions/<name> --items <file> --seller-code <code>`, then
+   show the user the warnings and the removed wording, then run `check`.
+5. Remind the user that every listing in `ebay_to_end.csv` must be ended before the auction goes live.
+
 ## Rules (no exceptions)
 
 - **Never invent facts.** If you can't read the brand, don't name one. If you can't tell the
