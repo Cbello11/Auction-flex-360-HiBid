@@ -13,7 +13,7 @@
     python -m af360 fix-descriptions auctions/<name>
                                             redo eBay lot descriptions from the saved listings (no photo download)
     python -m af360 set-seller auctions/<name> --seller-code X
-                                            fill in the seller code on every lot that has none
+                                            set the seller code on every lot (run again to change it)
 """
 import argparse
 import sys
@@ -119,7 +119,7 @@ def main(argv=None):
             if not args.seller_code:
                 print("Error: set-seller needs --seller-code <code from AF360: Customers > Customer List>")
                 return 1
-            changed, total = set_seller_code(args.auction_dir, args.seller_code)
+            changed, total = set_seller_code(args.auction_dir, args.seller_code, overwrite=True)
             print(f"Set seller code {args.seller_code} on {changed} of {total} lot(s).")
             return 0
 

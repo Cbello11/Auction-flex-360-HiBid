@@ -203,3 +203,12 @@ def test_cli_fix_and_set_seller(tmp_path, capsys):
     assert main(["set-seller", str(d), "--seller-code", "GRS"]) == 0
     assert read_lots(d)[0]["seller_code"] == "GRS"
     assert main(["check", str(d)]) == 0
+
+
+def test_set_seller_twice_replaces(tmp_path):
+    from af360.intake import read_lots
+    d = tmp_path / "s"
+    import_items(d, [normalize_item(RAW)], load_config(), downloader=fake_downloader([]), pause=0)
+    main(["set-seller", str(d), "--seller-code", "be896963-8"])
+    main(["set-seller", str(d), "--seller-code", "GRS"])
+    assert read_lots(d)[0]["seller_code"] == "GRS"
