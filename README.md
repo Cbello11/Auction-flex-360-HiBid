@@ -69,6 +69,20 @@ If there's **any** error, nothing is written, so a half-finished file never gets
 
 ## Bringing in eBay listings
 
+### Straight from your store (on the phone running the eBay server)
+```bash
+python -m af360 fetch-ebay <auction folder> --test                                 # connection check
+python -m af360 fetch-ebay <auction folder> --exclude-category "Remote Controls"   # ~10-15 min
+python -m af360 from-ebay  <auction folder> --seller-code <code>                   # downloads photos, ~1 hr
+python -m af360 build      <auction folder> --no-zip
+```
+- `fetch-ebay` talks to the eBay MCP server at `http://127.0.0.1:3333/mcp` and reads its token
+  from the Ubuntu proot (`/root/.config/ebay-connector/token`). Nothing goes through the cloud.
+- Both `fetch-ebay` and `from-ebay` save as they go. If the phone sleeps or Termux closes,
+  run the same command again and it continues where it stopped.
+
+### From a file
+
 ```bash
 python -m af360 from-ebay auctions/<name> --items ebay_items.json --seller-code GRS --start-bid-percent 25
 ```

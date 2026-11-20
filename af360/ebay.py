@@ -197,7 +197,7 @@ def fetch_photo(url, downloader=http_download):
 # -------------------------------------------------------------------- import
 
 def import_items(auction_dir, items, cfg, downloader=http_download,
-                 seller_code="", start_bid_percent=None, pause=0.2):
+                 seller_code="", start_bid_percent=None, pause=0.2, progress=None):
     """Add eBay items to an auction folder. Returns a report dict.
 
     Items already imported (matched by eBay item number) are skipped, so this is
@@ -214,7 +214,19 @@ def import_items(auction_dir, items, cfg, downloader=http_download,
     next_lot = max([int(x) for x in used_lots if x and x.isdigit()] or [0]) + 1
 
     report = {"added": [], "skipped": [], "warnings": [], "removed_text": []}
+    end_path = auction_dir / END_LIST
     end_rows = []
+    if end_path.exists():
+        with open(end_path, newline="", encoding="utf-8") as fh:
+            end_rows = list(csv.DictReader(fh))
+
+    def save_progress():
+        # Written after every listing, so a phone that sleeps mid-run loses nothing.
+        write_lots(auction_dir, rows)
+        with open(end_path, "w", newline="", encoding="utf-8") as fh:
+            writer = csv.DictWriter(fh, fieldnames=["lot", "ebay_item_id", "sku", "title", "url"])
+            writer.writeheader()
+            writer.writerows(end_rows)
 
     for item in items:
         iid = item["item_id"]
@@ -279,18 +291,11 @@ def import_items(auction_dir, items, cfg, downloader=http_download,
         end_rows.append({"lot": lot, "ebay_item_id": iid, "sku": item.get("sku", ""),
                          "title": item["title"], "url": item.get("url", "")})
         report["added"].append((lot, iid, saved))
+        save_progress()
+        if progress:
+            progress(len(report["added"]), len(items), lot, iid, saved)
 
-    write_lots(auction_dir, rows)
-
-    end_path = auction_dir / END_LIST
-    existing = []
-    if end_path.exists():
-        with open(end_path, newline="", encoding="utf-8") as fh:
-            existing = list(csv.DictReader(fh))
-    with open(end_path, "w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=["lot", "ebay_item_id", "sku", "title", "url"])
-        writer.writeheader()
-        writer.writerows(existing + end_rows)
+    save_progress()
     return report
 
 

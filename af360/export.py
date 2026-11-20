@@ -17,7 +17,7 @@ from .intake import read_lots
 from .validate import prepare_lots, safe_lot_name
 
 
-def build(auction_dir, cfg, dry_run=False):
+def build(auction_dir, cfg, dry_run=False, make_zip=True):
     """Validate and (unless dry_run) write the package. Returns (report, summary)."""
     auction_dir = Path(auction_dir)
     rows = read_lots(auction_dir)
@@ -57,9 +57,10 @@ def build(auction_dir, cfg, dry_run=False):
         for lot in lots:
             writer.writerow([lot.get(f, "") for f in FIELDS])
 
-    with zipfile.ZipFile(tmp_dir / "images.zip", "w", zipfile.ZIP_DEFLATED) as zf:
-        for img in sorted((tmp_dir / "images").iterdir()):
-            zf.write(img, img.name)
+    if make_zip:
+        with zipfile.ZipFile(tmp_dir / "images.zip", "w", zipfile.ZIP_DEFLATED) as zf:
+            for img in sorted((tmp_dir / "images").iterdir()):
+                zf.write(img, img.name)
 
     with open(tmp_dir / "report.txt", "w", encoding="utf-8") as fh:
         fh.write(f"Lots: {summary['lots']}\nPhotos: {summary['photos']}\n\n")
