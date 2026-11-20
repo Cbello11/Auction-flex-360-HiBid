@@ -177,3 +177,26 @@ def test_build_no_zip(tmp_path):
     assert report.ok
     assert not (d / "output" / "images.zip").exists()
     assert (d / "output" / "images" / "1-1.jpg").exists()
+
+
+def test_read_token_falls_back_to_proot(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    from af360 import fetch as f
+    monkeypatch.delenv("MCP_AUTH_TOKEN", raising=False)
+    monkeypatch.setattr(f, "DEFAULT_TOKEN_FILES", [str(tmp_path / "missing")])
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        return SimpleNamespace(returncode=0, stdout="abc123\n")
+    assert f.read_token(run=fake_run) == "abc123"
+    assert calls[0][:3] == ["proot-distro", "login", "ubuntu"]
+
+    def missing(cmd, **kw):
+        raise FileNotFoundError("no proot-distro")
+    assert f.read_token(run=missing) is None
+
+
+def test_default_url_is_root():
+    from af360.fetch import DEFAULT_URL
+    assert DEFAULT_URL == "http://127.0.0.1:3333/"

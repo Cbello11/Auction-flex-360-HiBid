@@ -83,7 +83,7 @@ def main(argv=None):
     parser.add_argument("--start-bid-percent", type=float,
                         help="from-ebay: starting bid as a %% of the eBay price (blank if not given)")
     parser.add_argument("--no-zip", action="store_true", help="build: skip images.zip (saves space)")
-    parser.add_argument("--url", help="fetch-ebay: eBay MCP server URL (default http://127.0.0.1:3333/mcp)")
+    parser.add_argument("--url", help="fetch-ebay: eBay MCP server URL (default http://127.0.0.1:3333/)")
     parser.add_argument("--token-file", help="fetch-ebay: file holding the server's token")
     parser.add_argument("--exclude-category", action="append",
                         help="fetch-ebay: eBay category to leave out (repeatable)")

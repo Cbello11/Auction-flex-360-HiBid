@@ -76,7 +76,7 @@ python -m af360 fetch-ebay <auction folder> --exclude-category "Remote Controls"
 python -m af360 from-ebay  <auction folder> --seller-code <code>                   # downloads photos, ~1 hr
 python -m af360 build      <auction folder> --no-zip
 ```
-- `fetch-ebay` talks to the eBay MCP server at `http://127.0.0.1:3333/mcp` and reads its token
+- `fetch-ebay` talks to the eBay MCP server at `http://127.0.0.1:3333/` and reads its token
   from the Ubuntu proot (`/root/.config/ebay-connector/token`). Nothing goes through the cloud.
 - Both `fetch-ebay` and `from-ebay` save as they go. If the phone sleeps or Termux closes,
   run the same command again and it continues where it stopped.

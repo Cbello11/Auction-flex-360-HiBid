@@ -7,26 +7,40 @@ where it stopped instead of starting over.
 """
 import json
 import os
+import subprocess
 import time
 from pathlib import Path
 
 from .ebay import normalize_item
 from .mcp_client import McpClient
 
-DEFAULT_URL = "http://127.0.0.1:3333/mcp"
+DEFAULT_URL = "http://127.0.0.1:3333/"  # the eBay MCP server answers at its root path
 # Where the phone's eBay server keeps its token (inside the Ubuntu proot), seen from Termux.
 DEFAULT_TOKEN_FILES = [
     "/data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu/root/.config/ebay-connector/token",
 ]
 
 
-def read_token(token_file=None):
+PROOT_TOKEN_PATH = "/root/.config/ebay-connector/token"
+
+
+def read_token(token_file=None, run=subprocess.run):
+    """The token is never printed. Order: env var, --token-file, known paths, then ask
+    the Ubuntu proot to read its own token file (works wherever proot keeps its files)."""
     if os.environ.get("MCP_AUTH_TOKEN"):
         return os.environ["MCP_AUTH_TOKEN"].strip()
     for candidate in ([token_file] if token_file else DEFAULT_TOKEN_FILES):
         if candidate and Path(candidate).is_file():
             return Path(candidate).read_text().strip()
-    return None
+    if token_file:
+        return None
+    try:
+        out = run(["proot-distro", "login", "ubuntu", "--", "cat", PROOT_TOKEN_PATH],
+                  capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    token = (out.stdout or "").strip()
+    return token if out.returncode == 0 and token and "\n" not in token else None
 
 
 def _as_list(value):
