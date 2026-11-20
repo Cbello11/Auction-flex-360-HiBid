@@ -135,3 +135,14 @@ def test_load_items_accepts_list_or_single(tmp_path):
     assert len(load_items(p)) == 1
     p.write_text(json.dumps([RAW, RAW]))
     assert len(load_items(p)) == 2
+
+
+def test_max_photos_keeps_first_ones(tmp_path):
+    raw = dict(RAW)
+    raw["PictureDetails"] = {"PictureURL": [
+        f"https://i.ebayimg.com/00/s/x/z/PICTURE{i:02d}abcdef/$_1.JPG" for i in range(8)]}
+    calls = []
+    report = import_items(tmp_path / "s", [normalize_item(raw)], load_config(),
+                          downloader=fake_downloader(calls), pause=0, max_photos=3)
+    assert report["added"][0][2] == 3
+    assert "PICTURE00" in calls[0] and not any("PICTURE03" in c for c in calls)

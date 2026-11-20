@@ -8,7 +8,7 @@
     python -m af360 fetch-ebay auctions/<name> [--exclude-category "Remote Controls"] [--test]
                                             pull active listings from the eBay server on this phone
     python -m af360 from-ebay auctions/<name> [--items file.json] [--seller-code X]
-                                            [--start-bid-percent 25]
+                                            [--start-bid-percent 25] [--max-photos 5]
                                             add eBay listings as lots (downloads photos)
 """
 import argparse
@@ -66,7 +66,8 @@ def run_from_ebay(args):
         print(f"  lot {lot} <- eBay {iid} ({photos} photo(s))   [{done} new so far, {total} in file]")
 
     report = import_items(args.auction_dir, items, load_config(args.config), seller_code=args.seller_code,
-                          start_bid_percent=args.start_bid_percent, progress=progress)
+                          start_bid_percent=args.start_bid_percent, progress=progress,
+                          max_photos=args.max_photos)
     print(report_text(report))
     print(f"\nNext: python -m af360 check {args.auction_dir}")
     return 0
@@ -82,6 +83,8 @@ def main(argv=None):
     parser.add_argument("--seller-code", default="", help="from-ebay: AF360 seller code for every lot")
     parser.add_argument("--start-bid-percent", type=float,
                         help="from-ebay: starting bid as a %% of the eBay price (blank if not given)")
+    parser.add_argument("--max-photos", type=int,
+                        help="from-ebay: keep only the first N photos of each listing (the first is the main shot)")
     parser.add_argument("--no-zip", action="store_true", help="build: skip images.zip (saves space)")
     parser.add_argument("--url", help="fetch-ebay: eBay MCP server URL (default http://127.0.0.1:3333/)")
     parser.add_argument("--token-file", help="fetch-ebay: file holding the server's token")

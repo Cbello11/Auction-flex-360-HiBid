@@ -197,7 +197,7 @@ def fetch_photo(url, downloader=http_download):
 # -------------------------------------------------------------------- import
 
 def import_items(auction_dir, items, cfg, downloader=http_download,
-                 seller_code="", start_bid_percent=None, pause=0.2, progress=None):
+                 seller_code="", start_bid_percent=None, pause=0.2, progress=None, max_photos=None):
     """Add eBay items to an auction folder. Returns a report dict.
 
     Items already imported (matched by eBay item number) are skipped, so this is
@@ -244,7 +244,8 @@ def import_items(auction_dir, items, cfg, downloader=http_download,
         folder = auction_dir / "photos" / lot
         folder.mkdir(parents=True, exist_ok=True)
         saved = 0
-        for n, url in enumerate(item["pictures"], start=1):
+        pictures = item["pictures"][:max_photos] if max_photos else item["pictures"]
+        for n, url in enumerate(pictures, start=1):
             try:
                 data, (w, h), _ = fetch_photo(url, downloader)
             except ValueError as exc:
