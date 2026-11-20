@@ -111,7 +111,7 @@ _LOGISTICS_START = re.compile(
     r"^(ships?|shipping|shipped|we ship|fast shipping|same[- ]day|handling time|returns?|"
     r"no returns|return policy|refunds?|combined (shipping|postage)|international (buyers|shipping)|"
     r"import (duties|charges)|feel free to message|message me|send (me )?a message|"
-    r"thanks? (you )?for (looking|shopping)|please (leave|check)|offers? (are )?(welcome|accepted))\b",
+    r"thanks? (you )?for (looking|shopping)|please leave|offers? (are )?(welcome|accepted))\b",
     re.IGNORECASE)
 _EBAY_ANYWHERE = re.compile(
     r"\b(free (express |fast |priority )?shipping|best offer|make (me )?an offer|buy it now|"

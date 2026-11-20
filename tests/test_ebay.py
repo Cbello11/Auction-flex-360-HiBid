@@ -166,6 +166,15 @@ REAL_SENTENCES = [
     ("The outer shipping box has some handling wear (creased, one corner slightly torn), but that's packaging only.", False),
     ("Good for shipping labels and barcode labels without ink or toner.", False),
     ("The box sets are The Godfather Collection, the Star Wars Trilogy with Return of the Jedi, and three X-Files tapes.", False),
+    # Second pass (Nov 20): buyer guidance that must stay.
+    ("Please check the part number against your vehicle before you buy.", False),
+    ("Please check the photos and fitment for your vehicle before buying.", False),
+    ("Please check the photos for the exact condition of the patches and fabric.", False),
+    ("Please check the measurements against a jacket you own.", False),
+    ("Please check these against a sweater you own.", False),
+    ("Please check them over.", False),
+    ("Please check out my other items for more.", True),
+    ("Please leave feedback when your item arrives.", True),
 ]
 
 
