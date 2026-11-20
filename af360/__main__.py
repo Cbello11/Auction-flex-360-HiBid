@@ -10,6 +10,10 @@
     python -m af360 from-ebay auctions/<name> [--items file.json] [--seller-code X]
                                             [--start-bid-percent 25] [--max-photos 5]
                                             add eBay listings as lots (downloads photos)
+    python -m af360 fix-descriptions auctions/<name>
+                                            redo eBay lot descriptions from the saved listings (no photo download)
+    python -m af360 set-seller auctions/<name> --seller-code X
+                                            fill in the seller code on every lot that has none
 """
 import argparse
 import sys
@@ -19,7 +23,7 @@ from .config import load_config
 from .export import build
 from .intake import new_auction, scan_photo_folders
 
-COMMANDS = ["new", "scan", "check", "build", "fetch-ebay", "from-ebay"]
+COMMANDS = ["new", "scan", "check", "build", "fetch-ebay", "from-ebay", "fix-descriptions", "set-seller"]
 
 
 def run_fetch(args):
@@ -100,6 +104,24 @@ def main(argv=None):
             return run_fetch(args)
         if args.command == "from-ebay":
             return run_from_ebay(args)
+        if args.command == "fix-descriptions":
+            from .ebay import load_items, refresh_descriptions
+            items_path = args.items or str(Path(args.auction_dir) / "ebay_items.json")
+            updated, removed = refresh_descriptions(args.auction_dir, load_items(items_path))
+            print(f"Updated {updated} description(s). Photos were not touched.")
+            if removed:
+                print("Removed eBay-only wording (check nothing important went):")
+                for line in removed:
+                    print(f"  - {line}")
+            return 0
+        if args.command == "set-seller":
+            from .ebay import set_seller_code
+            if not args.seller_code:
+                print("Error: set-seller needs --seller-code <code from AF360: Customers > Customer List>")
+                return 1
+            changed, total = set_seller_code(args.auction_dir, args.seller_code)
+            print(f"Set seller code {args.seller_code} on {changed} of {total} lot(s).")
+            return 0
 
         if args.command == "new":
             path = new_auction(args.auction_dir)

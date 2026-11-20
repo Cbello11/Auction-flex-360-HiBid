@@ -105,14 +105,28 @@ class _TextExtractor(HTMLParser):
 
 
 # Sentences about eBay checkout, shipping or returns are wrong on HiBid.
-EBAY_ONLY = re.compile(
-    r"\b(free shipping|ships?\b|shipping|shipped|same[- ]day|handling time|"
-    r"returns?\b|return policy|refund|best offer|make (an|me an) offer|buy it now|"
-    r"other (items|listings)|my store|feedback|ebay|combined (shipping|postage)|"
-    r"international (buyers|shipping)|import (duties|charges)|watch ?list|"
-    r"bundle (and|&) save|message me|send (me )?a message)",
-    re.IGNORECASE,
-)
+# Drop a sentence only when it STARTS with logistics wording, or contains a phrase that
+# only ever means eBay selling. Anything mentioning the item's box, wear or damage is kept.
+_LOGISTICS_START = re.compile(
+    r"^(ships?|shipping|shipped|we ship|fast shipping|same[- ]day|handling time|returns?|"
+    r"no returns|return policy|refunds?|combined (shipping|postage)|international (buyers|shipping)|"
+    r"import (duties|charges)|feel free to message|message me|send (me )?a message|"
+    r"thanks? (you )?for (looking|shopping)|please (leave|check)|offers? (are )?(welcome|accepted))\b",
+    re.IGNORECASE)
+_EBAY_ANYWHERE = re.compile(
+    r"\b(free (express |fast |priority )?shipping|best offer|make (me )?an offer|buy it now|"
+    r"(see|check out|view) my other|my other (items|listings)|my (ebay )?store|watch ?list|"
+    r"leave (positive )?feedback|bundle (and|&) save)\b",
+    re.IGNORECASE)
+_ITEM_FACTS = re.compile(r"\b(box|original|wear|damage[ds]?|missing|crease[ds]?|torn|scratch\w*|stain\w*|dent\w*)\b",
+                         re.IGNORECASE)
+
+
+def is_ebay_only(sentence):
+    s = sentence.strip()
+    if _ITEM_FACTS.search(s):
+        return False
+    return bool(_LOGISTICS_START.search(s) or _EBAY_ANYWHERE.search(s))
 
 
 def clean_description(raw_html):
@@ -133,7 +147,7 @@ def clean_description(raw_html):
         sentences = re.split(r"(?<=[.!?])\s+", line)
         keep = []
         for s in sentences:
-            (removed if EBAY_ONLY.search(s) else keep).append(s)
+            (removed if is_ebay_only(s) else keep).append(s)
         if keep:
             kept_lines.append(" ".join(keep))
     return "\n".join(kept_lines), removed
@@ -311,5 +325,38 @@ def report_text(report):
     if report["removed_text"]:
         lines.append("Removed eBay-only wording (check nothing important went):")
         lines.extend(f"  - {s}" for s in report["removed_text"])
-    lines.append(f"\nBEFORE THE AUCTION GOES LIVE: end every listing in {END_LIST} on eBay.")
+    lines.append(f"\n{END_LIST} lists the eBay item number for each lot, for later. Nothing on eBay was changed.")
     return "\n".join(lines)
+
+
+def refresh_descriptions(auction_dir, items):
+    """Rebuild every eBay lot's description from the saved listings, without touching photos.
+    Returns (updated_count, removed_sentences)."""
+    auction_dir = Path(auction_dir)
+    by_id = {it["item_id"]: it for it in items}
+    rows = read_lots(auction_dir)
+    updated, removed_all = 0, []
+    for r in rows:
+        r.pop("_line", None)
+        m = re.search(r"ebay:(\d+)", r.get("notes", ""))
+        if not m or m.group(1) not in by_id:
+            continue
+        description, removed = build_description(by_id[m.group(1)])
+        if description != r.get("description", ""):
+            r["description"] = description
+            updated += 1
+        removed_all.extend(f"Lot {r.get('lot')}: {x}" for x in removed)
+    write_lots(auction_dir, rows)
+    return updated, removed_all
+
+
+def set_seller_code(auction_dir, code, overwrite=False):
+    rows = read_lots(auction_dir)
+    changed = 0
+    for r in rows:
+        r.pop("_line", None)
+        if overwrite or not r.get("seller_code"):
+            r["seller_code"] = code
+            changed += 1
+    write_lots(auction_dir, rows)
+    return changed, len(rows)

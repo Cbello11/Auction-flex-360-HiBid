@@ -146,3 +146,60 @@ def test_max_photos_keeps_first_ones(tmp_path):
                           downloader=fake_downloader(calls), pause=0, max_photos=3)
     assert report["added"][0][2] == 3
     assert "PICTURE00" in calls[0] and not any("PICTURE03" in c for c in calls)
+
+
+# Real sentences from the first full import (Nov 20). True = should be removed.
+REAL_SENTENCES = [
+    ("Ships within 1-2 business days.", True),
+    ("Ships by Media Mail from Las Vegas, NV.", True),
+    ("Ships promptly with tracking.", True),
+    ("Shipping from Las Vegas, NV.", True),
+    ("Shipped with USPS Ground Advantage.", True),
+    ("Ships securely packed, each piece wrapped separately.", True),
+    ("No returns on untested lots.", True),
+    ("The clear color adds a sleek touch, and with free express shipping in the United States, you can start.", True),
+    ("The pair shown is what ships.", False),
+    ("Ships in the Nike box shown, which is not the original.", False),
+    ("Ships in the box shown, which is not the original box for this pair.", False),
+    ("Listed as Very good (eBay ungraded scale), graded conservatively from the photos; judge for yourself.", False),
+    ("Sold as a lot of 4, no returns for spec mismatch since specs were never advertised.", False),
+    ("The outer shipping box has some handling wear (creased, one corner slightly torn), but that's packaging only.", False),
+    ("Good for shipping labels and barcode labels without ink or toner.", False),
+    ("The box sets are The Godfather Collection, the Star Wars Trilogy with Return of the Jedi, and three X-Files tapes.", False),
+]
+
+
+@pytest.mark.parametrize("sentence,should_remove", REAL_SENTENCES)
+def test_real_sentences(sentence, should_remove):
+    from af360.ebay import is_ebay_only
+    assert is_ebay_only(sentence) is should_remove
+
+
+def test_refresh_descriptions_and_seller_code(tmp_path):
+    from af360.ebay import refresh_descriptions, set_seller_code
+    from af360.intake import read_lots
+    d = tmp_path / "s"
+    raw = dict(RAW, Description="<p>Box sets with Return of the Jedi.</p><p>Ships promptly with tracking.</p>")
+    import_items(d, [normalize_item(raw)], load_config(), downloader=fake_downloader([]), pause=0)
+    rows = read_lots(d)
+    rows[0]["description"] = "old text"
+    from af360.intake import write_lots
+    write_lots(d, [{k: v for k, v in r.items() if k != "_line"} for r in rows])
+    updated, removed = refresh_descriptions(d, [normalize_item(raw)])
+    assert updated == 1 and removed == ["Lot 1: Ships promptly with tracking."]
+    assert "Return of the Jedi" in read_lots(d)[0]["description"]
+    assert set_seller_code(d, "GRS") == (1, 1)
+    assert read_lots(d)[0]["seller_code"] == "GRS"
+    assert (d / "photos" / "1").exists()  # photos untouched
+
+
+def test_cli_fix_and_set_seller(tmp_path, capsys):
+    from af360.intake import read_lots
+    d = tmp_path / "s"
+    import_items(d, [normalize_item(RAW)], load_config(), downloader=fake_downloader([]), pause=0)
+    (d / "ebay_items.json").write_text(json.dumps([RAW]))
+    assert main(["fix-descriptions", str(d)]) == 0
+    assert main(["set-seller", str(d)]) == 1
+    assert main(["set-seller", str(d), "--seller-code", "GRS"]) == 0
+    assert read_lots(d)[0]["seller_code"] == "GRS"
+    assert main(["check", str(d)]) == 0
