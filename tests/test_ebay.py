@@ -239,3 +239,22 @@ def test_renumber_then_build(tmp_path):
     names = sorted(p.name for p in (d / "output" / "images").iterdir())
     assert names == ["30-1.jpg", "30-2.jpg", "31-1.jpg", "31-2.jpg"]
     assert main(["renumber", str(d)]) == 1
+
+
+def test_drop_then_renumber_build(tmp_path):
+    from af360.intake import read_lots
+    d = tmp_path / "s"
+    other = dict(RAW, ItemID=111111111111, Title="Second item")
+    third = dict(RAW, ItemID=222222222222, Title="Third item")
+    import_items(d, [normalize_item(RAW), normalize_item(other), normalize_item(third)], load_config(),
+                 downloader=fake_downloader([]), seller_code="GRS", pause=0)
+    assert main(["drop", str(d), "--ids", "111111111111,999999999999"]) == 0
+    assert [r["lot"] for r in read_lots(d)] == ["1", "3"]
+    assert (d / "dropped_photos" / "2-ebay111111111111").is_dir()
+    with open(d / "ebay_to_end.csv", newline="", encoding="utf-8") as fh:
+        assert [r["ebay_item_id"] for r in csv.DictReader(fh)] == ["820257856860", "222222222222"]
+    assert main(["renumber", str(d), "--start", "30"]) == 0
+    report, summary = build(d, load_config(), make_zip=False)
+    assert report.ok and not report.warnings, report.text()
+    assert summary["lots"] == 2
+    assert main(["drop", str(d)]) == 1

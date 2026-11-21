@@ -393,3 +393,39 @@ def renumber_lots(auction_dir, start):
             writer.writeheader()
             writer.writerows(end_rows)
     return len(rows), (min(mapping.values(), key=int) if mapping else None), (max(mapping.values(), key=int) if mapping else None)
+
+
+def drop_lots(auction_dir, ebay_ids):
+    """Take lots out of lots.csv by eBay item number (from the pick list).
+    Their photo folders move to dropped_photos/ so nothing is deleted and it can be undone.
+    Returns (dropped [(lot, id)], not_found [ids])."""
+    import shutil
+    auction_dir = Path(auction_dir)
+    wanted = {str(i).strip() for i in ebay_ids if str(i).strip()}
+    rows = read_lots(auction_dir)
+    keep, dropped, seen = [], [], set()
+    for r in rows:
+        r.pop("_line", None)
+        m = re.search(r"\bebay:(\d+)", r.get("notes", ""))
+        iid = m.group(1) if m else None
+        if iid in wanted:
+            seen.add(iid)
+            dropped.append((r.get("lot", ""), iid))
+            folder = auction_dir / "photos" / (r.get("photo_folder") or r.get("lot", ""))
+            if folder.is_dir():
+                dest = auction_dir / "dropped_photos" / f"{folder.name}-ebay{iid}"
+                dest.parent.mkdir(exist_ok=True)
+                shutil.move(str(folder), str(dest))
+        else:
+            keep.append(r)
+    write_lots(auction_dir, keep)
+
+    end_path = auction_dir / END_LIST
+    if end_path.exists() and seen:
+        with open(end_path, newline="", encoding="utf-8") as fh:
+            end_rows = [e for e in csv.DictReader(fh) if e.get("ebay_item_id") not in seen]
+        with open(end_path, "w", newline="", encoding="utf-8") as fh:
+            writer = csv.DictWriter(fh, fieldnames=["lot", "ebay_item_id", "sku", "title", "url"])
+            writer.writeheader()
+            writer.writerows(end_rows)
+    return dropped, sorted(wanted - seen)

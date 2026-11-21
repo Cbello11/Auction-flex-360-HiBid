@@ -16,6 +16,8 @@
                                             set the seller code on every lot (run again to change it)
     python -m af360 renumber auctions/<name> --start 30
                                             renumber lots to start at 30 (photos follow), then build again
+    python -m af360 drop auctions/<name> --ids 820...,820...
+                                            take out lots by eBay item number (from the pick list's Export)
 """
 import argparse
 import sys
@@ -25,7 +27,7 @@ from .config import load_config
 from .export import build
 from .intake import new_auction, scan_photo_folders
 
-COMMANDS = ["new", "scan", "check", "build", "fetch-ebay", "from-ebay", "fix-descriptions", "set-seller", "renumber"]
+COMMANDS = ["new", "scan", "check", "build", "fetch-ebay", "from-ebay", "fix-descriptions", "set-seller", "renumber", "drop"]
 
 
 def run_fetch(args):
@@ -92,6 +94,7 @@ def main(argv=None):
     parser.add_argument("--max-photos", type=int,
                         help="from-ebay: keep only the first N photos of each listing (the first is the main shot)")
     parser.add_argument("--start", type=int, help="renumber: the first lot number to use")
+    parser.add_argument("--ids", help="drop: eBay item numbers to take out, comma separated")
     parser.add_argument("--no-zip", action="store_true", help="build: skip images.zip (saves space)")
     parser.add_argument("--url", help="fetch-ebay: eBay MCP server URL (default http://127.0.0.1:3333/)")
     parser.add_argument("--token-file", help="fetch-ebay: file holding the server's token")
@@ -116,6 +119,18 @@ def main(argv=None):
                 print("Removed eBay-only wording (check nothing important went):")
                 for line in removed:
                     print(f"  - {line}")
+            return 0
+        if args.command == "drop":
+            from .ebay import drop_lots
+            ids = [i for i in (args.ids or "").replace(" ", ",").split(",") if i]
+            if not ids:
+                print("Error: drop needs --ids <eBay item numbers, comma separated>")
+                return 1
+            dropped, missing = drop_lots(args.auction_dir, ids)
+            print(f"Took out {len(dropped)} lot(s). Their photos moved to dropped_photos/ (nothing deleted).")
+            if missing:
+                print(f"{len(missing)} number(s) weren't in this sale (e.g. remote controls left out earlier): fine.")
+            print("Next: renumber, then build.")
             return 0
         if args.command == "renumber":
             from .ebay import renumber_lots
