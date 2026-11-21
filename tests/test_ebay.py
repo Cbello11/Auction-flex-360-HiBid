@@ -221,3 +221,21 @@ def test_set_seller_twice_replaces(tmp_path):
     main(["set-seller", str(d), "--seller-code", "be896963-8"])
     main(["set-seller", str(d), "--seller-code", "GRS"])
     assert read_lots(d)[0]["seller_code"] == "GRS"
+
+
+def test_renumber_then_build(tmp_path):
+    from af360.export import build
+    from af360.intake import read_lots
+    d = tmp_path / "s"
+    other = dict(RAW, ItemID=111111111111, Title="Second item")
+    import_items(d, [normalize_item(RAW), normalize_item(other)], load_config(),
+                 downloader=fake_downloader([]), seller_code="GRS", pause=0)
+    assert main(["renumber", str(d), "--start", "30"]) == 0
+    assert [r["lot"] for r in read_lots(d)] == ["30", "31"]
+    with open(d / "ebay_to_end.csv", newline="", encoding="utf-8") as fh:
+        assert [r["lot"] for r in csv.DictReader(fh)] == ["30", "31"]
+    report, summary = build(d, load_config(), make_zip=False)
+    assert report.ok, report.text()
+    names = sorted(p.name for p in (d / "output" / "images").iterdir())
+    assert names == ["30-1.jpg", "30-2.jpg", "31-1.jpg", "31-2.jpg"]
+    assert main(["renumber", str(d)]) == 1

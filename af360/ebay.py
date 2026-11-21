@@ -360,3 +360,36 @@ def set_seller_code(auction_dir, code, overwrite=False):
             changed += 1
     write_lots(auction_dir, rows)
     return changed, len(rows)
+
+
+def renumber_lots(auction_dir, start):
+    """Give every lot a new number starting at `start`, keeping the current order.
+    Photos stay in their folders (photo_folder is kept), and ebay_to_end.csv follows."""
+    auction_dir = Path(auction_dir)
+    rows = read_lots(auction_dir)
+
+    def key(r):
+        lot = r.get("lot", "")
+        return (0, int(lot), "") if lot.isdigit() else (1, 0, lot)
+
+    rows.sort(key=key)
+    mapping = {}
+    for n, r in enumerate(rows, start=int(start)):
+        r.pop("_line", None)
+        old = r.get("lot", "")
+        r["photo_folder"] = r.get("photo_folder") or old
+        r["lot"] = str(n)
+        mapping[old] = str(n)
+    write_lots(auction_dir, rows)
+
+    end_path = auction_dir / END_LIST
+    if end_path.exists():
+        with open(end_path, newline="", encoding="utf-8") as fh:
+            end_rows = list(csv.DictReader(fh))
+        for e in end_rows:
+            e["lot"] = mapping.get(e.get("lot", ""), e.get("lot", ""))
+        with open(end_path, "w", newline="", encoding="utf-8") as fh:
+            writer = csv.DictWriter(fh, fieldnames=["lot", "ebay_item_id", "sku", "title", "url"])
+            writer.writeheader()
+            writer.writerows(end_rows)
+    return len(rows), (min(mapping.values(), key=int) if mapping else None), (max(mapping.values(), key=int) if mapping else None)

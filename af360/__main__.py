@@ -14,6 +14,8 @@
                                             redo eBay lot descriptions from the saved listings (no photo download)
     python -m af360 set-seller auctions/<name> --seller-code X
                                             set the seller code on every lot (run again to change it)
+    python -m af360 renumber auctions/<name> --start 30
+                                            renumber lots to start at 30 (photos follow), then build again
 """
 import argparse
 import sys
@@ -23,7 +25,7 @@ from .config import load_config
 from .export import build
 from .intake import new_auction, scan_photo_folders
 
-COMMANDS = ["new", "scan", "check", "build", "fetch-ebay", "from-ebay", "fix-descriptions", "set-seller"]
+COMMANDS = ["new", "scan", "check", "build", "fetch-ebay", "from-ebay", "fix-descriptions", "set-seller", "renumber"]
 
 
 def run_fetch(args):
@@ -89,6 +91,7 @@ def main(argv=None):
                         help="from-ebay: starting bid as a %% of the eBay price (blank if not given)")
     parser.add_argument("--max-photos", type=int,
                         help="from-ebay: keep only the first N photos of each listing (the first is the main shot)")
+    parser.add_argument("--start", type=int, help="renumber: the first lot number to use")
     parser.add_argument("--no-zip", action="store_true", help="build: skip images.zip (saves space)")
     parser.add_argument("--url", help="fetch-ebay: eBay MCP server URL (default http://127.0.0.1:3333/)")
     parser.add_argument("--token-file", help="fetch-ebay: file holding the server's token")
@@ -113,6 +116,14 @@ def main(argv=None):
                 print("Removed eBay-only wording (check nothing important went):")
                 for line in removed:
                     print(f"  - {line}")
+            return 0
+        if args.command == "renumber":
+            from .ebay import renumber_lots
+            if not args.start or args.start < 1:
+                print("Error: renumber needs --start <first lot number>, e.g. --start 30")
+                return 1
+            total, first, last = renumber_lots(args.auction_dir, args.start)
+            print(f"Renumbered {total} lot(s): now {first} to {last}. Run build again so photo names match.")
             return 0
         if args.command == "set-seller":
             from .ebay import set_seller_code
